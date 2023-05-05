@@ -102,18 +102,22 @@ def waitStadiumRaceStart():
     while(pag.pixelMatchesColor(RETURN_HOME[0],RETURN_HOME[1],RETURN_HOME_COLOR)):
         time.sleep(0.2)
         print("Waiting for race to start")
-    time.sleep(1)
+    time.sleep(2)
 
 def stadiumRacing():
     bushcount = 0
     while(bushcount < 5):
-        cPos = STAD_RACE_POS_XSTART
+        # Jump over obstacle
         if(pag.pixelMatchesColor(STAD_RACE_POS_XSTART, STAD_RACE_POS_Y, STAD_RACE_JUMP_COLOR)):
             click((950,600))
-        if pag.pixelMatchesColor(FINISH_BUSH_POS[0],FINISH_BUSH_POS[1], FINISH_BUSH_COLOR) or pag.pixelMatchesColor(FINISH_BUSH_POS_2[0],FINISH_BUSH_POS_2[1], FINISH_BUSH_COLOR):
-            bushcount += 1  
+
+        elif pag.pixelMatchesColor(FINISH_BUSH_POS[0],FINISH_BUSH_POS[1], FINISH_BUSH_COLOR) or pag.pixelMatchesColor(FINISH_BUSH_POS_2[0],FINISH_BUSH_POS_2[1], FINISH_BUSH_COLOR):
+            bushcount += 1
+            time.sleep(0.2)
+            
         else:
             bushcount = 0
+    print("STOPPED RACING")
     time.sleep(3)
     click(FISHING_EXIT)
     time.sleep(2)
@@ -339,6 +343,7 @@ def clickCircle(region, debug=False):
 
 def ui_update_status(str):
     global my_window
+    return
     print("UI update currently broken")
     # my_window['_status_'].update(text="Status: " + str)
 

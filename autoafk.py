@@ -5,6 +5,8 @@ import time
 from screeninfo import get_monitors
 import PySimpleGUI as sg
 import asyncio
+import multiprocessing
+import threading
 
 # left, top, width, height
 GAME_REGION = (442, 303, 996, 594)
@@ -54,7 +56,6 @@ SIGN_IN_BUTTON = (974, 729)
 
 STAD_RACE_POS_Y = 840
 STAD_RACE_POS_XSTART = 975
-# STAD_RACE_POS_XEND = 985
 STAD_RACE_JUMP_COLOR = (155,168,163)
 FINISH_BUSH_POS = (751,830)
 FINISH_BUSH_POS_2 = (747,830)
@@ -74,31 +75,11 @@ def main():
         login()
         travelToFishing()
 
-async def createWindow():
-    layout = [[sg.Text("Created By RubberDucky#4318")], [sg.Button("Auto Race")], [sg.Button("Auto Fish")], [sg.Button("Exit")]]
-    window = sg.Window(title='PetPals AFK Tool', layout=layout, keep_on_top=True, margins=(100, 50))
-    isRacing = False
-    isFishing = False
-    currentTask = ''
-
-    # Create an event loop
-    while True:
-        event, values = window.read()
-        
-        if(event == "Auto Race" and isRacing == False and isFishing == False):
-            print("Start event: racing")
-            currentTask = asyncio.create_task(racingLoop())
-
-        if(event == "Auto Race" and isRacing == True):
-            currentTask.cancel()
-
-        if event == "Exit" or event == sg.WIN_CLOSED:
-            currentTask.cancel()
-            break
 
 
 
-async def racingLoop():
+
+def racingLoop():
     while True:
         enterStadium()
         waitStadiumRaceStart()
@@ -120,21 +101,10 @@ def waitStadiumRaceStart():
 
 def stadiumRacing():
     bushcount = 0
-    # lastPixelRGB = (0,0,0)
     while(bushcount < 5):
         cPos = STAD_RACE_POS_XSTART
-        # while(cPos < STAD_RACE_POS_XEND):
         if(pag.pixelMatchesColor(STAD_RACE_POS_XSTART, STAD_RACE_POS_Y, STAD_RACE_JUMP_COLOR)):
             click((950,600))
-            #     break
-            # else:
-            #     cPos += 1
-        # newPixel = pag.pixel(1010, 640)
-        # if (lastPixelRGB == newPixel):
-        #     bushcount += 1
-        # else:
-        #     lastPixelRGB = newPixel
-        #     bushcount = 0
         if pag.pixelMatchesColor(FINISH_BUSH_POS[0],FINISH_BUSH_POS[1], FINISH_BUSH_COLOR) or pag.pixelMatchesColor(FINISH_BUSH_POS_2[0],FINISH_BUSH_POS_2[1], FINISH_BUSH_COLOR):
             bushcount += 1  
         else:
@@ -279,25 +249,30 @@ def sellInv():
         time.sleep(0.1)
 
 def fishingLoop():
-    while(pag.pixelMatchesColor(BAIT_BORDER_LOC[0],BAIT_BORDER_LOC[1],BAIT_BORDER_COLOR,tolerance=3)):
+    while(True):
         equipBait()
+        print("EQUIPED BAIT")
+        time.sleep(1)
+        
         clickCircle(FISHING_CIRCLE_REGION) # Start fishing
-        time.sleep(0.1)
-        clickCircle(FISHING_CIRCLE_REGION)
-        time.sleep(0.1)
-        clickCircle(FISHING_CIRCLE_REGION)
+        print("START FISHING")
+        time.sleep(1)
+
         catchFish()
+        print("CAUGHT FISH")
+        time.sleep(1)
 
 def catchFish():
     # print("in catch fish")
     # Wait for fish to bite
     while(not pag.pixelMatchesColor(FISH_BAR_LOCATION[0],FISH_BAR_LOCATION[1],FISH_BAR_COLOR,tolerance=5)):
-        time.sleep(0.2)
+        time.sleep(0.1)
     # print("fish bite")
     # Now wait till we catch or lose the fish
     while(pag.pixelMatchesColor(FISH_BAR_LOCATION[0],FISH_BAR_LOCATION[1],FISH_BAR_COLOR,tolerance=5)):
         clickCircle(FISHING_CIRCLE_REGION)
-        time.sleep(1)
+        print("CATCHING")
+    print("DONE CAUGHT OR LOST")
     # print("caught or lost fish")
 
 def equipBait():
@@ -309,18 +284,43 @@ def click(posTuple):
 
 def clickCircle(region, debug=False):
     
-    s = pag.screenshot("myimg.png", region=region)
-    s = np.array(s)
-    gray = cv.cvtColor(s, cv.COLOR_BGR2GRAY)
-    gray = cv.medianBlur(gray, 5)
+    img = pag.screenshot("myimg.png", region=region)
+    img = np.array(img)
+    # Convert the image from BGR to HSV color space
+    hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
+
+    # Split the HSV channels
+    h, s, v = cv.split(hsv)
+
+    # Increase the saturation of the image
+    saturation_factor = 2
+    s = np.clip(s * saturation_factor, 0, 255).astype(np.uint8)
+
+    # Merge the channels back together
+    hsv = cv.merge([h, s, v])
+
+
+    gray = cv.cvtColor(hsv, cv.COLOR_BGR2GRAY)
+    alpha = 1.5 # Contrast control (1.0-3.0)
+    beta = 0    # Brightness control (0-100)
+    gray = cv.convertScaleAbs(gray, alpha=alpha, beta=beta)
+    gray = cv.blur(gray, (5,5))
     rows = gray.shape[0]
-    circles = cv.HoughCircles(gray, cv.HOUGH_GRADIENT, 1, rows,
-                               param1=10, param2=24,
-                               minRadius=50, maxRadius=80)
+    circles = cv.HoughCircles(
+        gray, 
+        cv.HOUGH_GRADIENT, 
+        1, 
+        rows,
+        param1=10, 
+        param2=20,
+        minRadius=60,
+        maxRadius=70
+        )
     
     if circles is not None:
         pag.moveTo(circles[0][0][0] + region[0] ,circles[0][0][1] + region[1])
-        click((circles[0][0][0] + region[0] ,circles[0][0][1] + region[1]))
+        if not debug:
+            click((circles[0][0][0] + region[0] ,circles[0][0][1] + region[1]))
         if(debug):
             circles = np.uint16(np.around(circles))
             for i in circles[0, :]:
@@ -330,8 +330,66 @@ def clickCircle(region, debug=False):
                 # circle outline
                 radius = i[2]
                 cv.circle(s, center, radius, (255, 0, 255), 3)
-            cv.imshow("detected circles", s)
-            cv.waitKey(0)
-                
-#main()
-asyncio.run(createWindow())
+    if(debug):
+        cv.imshow("detected circles", gray)
+        cv.waitKey(0)
+
+
+def createWindow():
+
+    sg.theme('DarkGrey10')
+    titleFont = ('Courier New', 16, 'bold')
+    descFont = ('Courier New', 10, 'italic')
+    layout = [
+        [sg.Text("PetPals AFK Tool", justification='center', font=titleFont)],
+        [sg.Text("Created By RubberDucky#4318", font=descFont),], 
+        [sg.Button("Auto Race",key='_race_')], 
+        [sg.Button("Auto Fish",key='_fish_')],
+        [sg.Button("Exit")]
+        ]
+    
+    window = sg.Window(title='PetPals AFK Tool', layout=layout, keep_on_top=True, margins=(20, 50))
+    isRacing = False
+    isFishing = False
+    process = ''
+    # Create an event loop
+    while True:
+        event, values = window.read()
+        
+        # Start Racing
+        if(event == "_race_" and isRacing == False and isFishing == False):
+            isRacing = True
+            window["_race_"].update(text="Stop Racing")
+            print("Start event: racing")
+            process = multiprocessing.Process(target=racingLoop)
+            process.start()
+        # Stop Racing
+        elif(event == "_race_" and isRacing == True):
+            isRacing = False
+            window["_race_"].update(text="Auto Race")
+            print("Stopping AutoRace")
+            process.terminate()
+        # Start Fishing
+        elif(event == "_fish_" and isFishing == False and isRacing == False):
+            isFishing = True
+            window["_fish_"].update(text="Stop Fishing")
+            print("Start event: Fishing")
+            process = multiprocessing.Process(target=fishingLoop)
+            process.start()
+        # Stop Fishing
+        elif(event == "_fish_" and isFishing == True):
+            isFishing = False
+            window["_fish_"].update(text="Auto Fish")
+            print("Stopping AutoFish")
+            process.terminate()
+
+        # Exit program
+        if event == "Exit" or event == sg.WIN_CLOSED:
+            if process != '':
+                process.terminate()
+            break
+
+if __name__ == '__main__':
+    createWindow()
+
+# clickCircle(FISHING_CIRCLE_REGION, True)

@@ -8,6 +8,8 @@ import asyncio
 import multiprocessing
 import threading
 
+my_window = ''
+
 # left, top, width, height
 GAME_REGION = (442, 303, 996, 594)
 FISHING_CIRCLE_REGION = (950, 421, 440, 301)
@@ -81,8 +83,11 @@ def main():
 
 def racingLoop():
     while True:
+        ui_update_status("ENTER STATIUM")
         enterStadium()
+        ui_update_status("WAITING RACE START")
         waitStadiumRaceStart()
+        ui_update_status("RACING")
         stadiumRacing()
         
 
@@ -251,15 +256,15 @@ def sellInv():
 def fishingLoop():
     while(True):
         equipBait()
-        print("EQUIPED BAIT")
+        ui_update_status("EQUIPED BAIT")
         time.sleep(1)
         
         clickCircle(FISHING_CIRCLE_REGION) # Start fishing
-        print("START FISHING")
+        ui_update_status("START FISHING")
         time.sleep(1)
 
         catchFish()
-        print("CAUGHT FISH")
+        ui_update_status("CAUGHT FISH")
         time.sleep(1)
 
 def catchFish():
@@ -271,8 +276,6 @@ def catchFish():
     # Now wait till we catch or lose the fish
     while(pag.pixelMatchesColor(FISH_BAR_LOCATION[0],FISH_BAR_LOCATION[1],FISH_BAR_COLOR,tolerance=5)):
         clickCircle(FISHING_CIRCLE_REGION)
-        print("CATCHING")
-    print("DONE CAUGHT OR LOST")
     # print("caught or lost fish")
 
 def equipBait():
@@ -334,9 +337,13 @@ def clickCircle(region, debug=False):
         cv.imshow("detected circles", gray)
         cv.waitKey(0)
 
+def ui_update_status(str):
+    global my_window
+    print("UI update currently broken")
+    # my_window['_status_'].update(text="Status: " + str)
 
 def createWindow():
-
+    global my_window
     sg.theme('DarkGrey10')
     titleFont = ('Courier New', 16, 'bold')
     descFont = ('Courier New', 10, 'italic')
@@ -345,41 +352,42 @@ def createWindow():
         [sg.Text("Created By RubberDucky#4318", font=descFont),], 
         [sg.Button("Auto Race",key='_race_')], 
         [sg.Button("Auto Fish",key='_fish_')],
-        [sg.Button("Exit")]
+        [sg.Button("Exit")],
+        [sg.Text("Status: Idle",key='_status_')]
         ]
     
-    window = sg.Window(title='PetPals AFK Tool', layout=layout, keep_on_top=True, margins=(20, 50))
+    my_window = sg.Window(title='PetPals AF', icon="icon.ico", layout=layout, keep_on_top=True, margins=(20, 50))
     isRacing = False
     isFishing = False
     process = ''
     # Create an event loop
     while True:
-        event, values = window.read()
+        event, values = my_window.read()
         
         # Start Racing
         if(event == "_race_" and isRacing == False and isFishing == False):
             isRacing = True
-            window["_race_"].update(text="Stop Racing")
+            my_window["_race_"].update(text="Stop Racing")
             print("Start event: racing")
             process = multiprocessing.Process(target=racingLoop)
             process.start()
         # Stop Racing
         elif(event == "_race_" and isRacing == True):
             isRacing = False
-            window["_race_"].update(text="Auto Race")
+            my_window["_race_"].update(text="Auto Race")
             print("Stopping AutoRace")
             process.terminate()
         # Start Fishing
         elif(event == "_fish_" and isFishing == False and isRacing == False):
             isFishing = True
-            window["_fish_"].update(text="Stop Fishing")
+            my_window["_fish_"].update(text="Stop Fishing")
             print("Start event: Fishing")
             process = multiprocessing.Process(target=fishingLoop)
             process.start()
         # Stop Fishing
         elif(event == "_fish_" and isFishing == True):
             isFishing = False
-            window["_fish_"].update(text="Auto Fish")
+            my_window["_fish_"].update(text="Auto Fish")
             print("Stopping AutoFish")
             process.terminate()
 

@@ -290,6 +290,7 @@ def fishingLoop():
         
         clickCircle(FISHING_CIRCLE_REGION) # Start fishing
         while(pag.pixelMatchesColor(FISH_BAIT_BORDER_LOC[0],FISH_BAIT_BORDER_LOC[1],FISH_BAIT_BORDER_COLOR,tolerance=5)):
+            equipBait()
             clickCircle(FISHING_CIRCLE_REGION) # If first click was a miss, try again.
 
         ui_update_status("START FISHING")

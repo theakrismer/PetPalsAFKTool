@@ -4,9 +4,7 @@ import numpy as np
 import time
 from screeninfo import get_monitors
 import PySimpleGUI as sg
-import asyncio
 import multiprocessing
-import threading
 
 my_window = ''
 
@@ -16,6 +14,9 @@ FISHING_CIRCLE_REGION = (950, 421, 440, 301)
 
 FISH_BAR_LOCATION = (788,849)
 FISH_BAR_COLOR = (213, 211, 236)
+
+FISH_BAIT_BORDER_COLOR = (22,44,60)
+FISH_BAIT_BORDER_LOC = (566,860)
 
 
 RETURN_HOME = (1366, 840)
@@ -45,7 +46,7 @@ TOMATO_LOCATION = (1167, 539)
 PLUS_BUTTON = (1012, 643)
 SHOP_BUY_BUTTON = (948, 761)
 
-FISHINGVIEW= (1151, 801)
+FISHINGVIEW = (1151, 801)
 FISHINGVIEWCOLOR = (170, 221, 227)
 ENTER_FISHING = (1185, 531)
 FISHING_ACCEPT_BUTTON = (956, 677)
@@ -63,26 +64,49 @@ FINISH_BUSH_POS = (751,830)
 FINISH_BUSH_POS_2 = (747,830)
 FINISH_BUSH_COLOR = (255,255,255)
 
+TRADE_DECLINE_BUTTON = (1144,637)
+LEVEL_UP_ACCEPT_BUTTON = (950, 770)
+CLOSE_PROFILE_BUTTON = (1207, 478)
 
-def main():
-    if(pag.pixelMatchesColor(LOGIN_BUTTON[0],LOGIN_BUTTON[1],LOGIN_BUTTON_COLOR)):
-        login()
-        travelToFishing()
+
+# def main():
+#     if(pag.pixelMatchesColor(LOGIN_BUTTON[0],LOGIN_BUTTON[1],LOGIN_BUTTON_COLOR)):
+#         login()
+#         travelToFishing()
+#     while True:
+#         fishingLoop()
+#         sellFish()
+#         saveGame()
+#         restock()
+#         refresh()
+#         login()
+#         travelToFishing()
+
+def stopInturruptions(declineTrades):
     while True:
-        fishingLoop()
-        sellFish()
-        saveGame()
-        restock()
-        refresh()
-        login()
-        travelToFishing()
 
+        if(declineTrades):
+            declineTrade()
 
+        acceptLevelup()
+        closeProfile()
 
-
+def declineTrade():
+    if pag.locateOnScreen("trade_request.PNG"):
+        print("DECLINING TRADE")
+        click(TRADE_DECLINE_BUTTON)
+def acceptLevelup():
+    if pag.locateOnScreen("level_up.PNG"):
+        print("ACCEPT LEVEL UP")
+        click(LEVEL_UP_ACCEPT_BUTTON)
+def closeProfile():
+    if pag.locateOnScreen("profile_open.PNG"):
+        print("CLOSING PROFILE")
+        click(CLOSE_PROFILE_BUTTON)
 
 def racingLoop():
     while True:
+        time.sleep(1.5) # Added delay, to close level up etc
         ui_update_status("ENTER STATIUM")
         enterStadium()
         ui_update_status("WAITING RACE START")
@@ -93,10 +117,11 @@ def racingLoop():
 
 # Auto Statium
 def enterStadium():
-   click((720,420))
-   time.sleep(0.5)
-   click(CONFIRM_ENTER)
-   time.sleep(1)
+   while(not pag.locateOnScreen("stadium_lobby.PNG",confidence=0.8)):
+    click((720,420))
+    time.sleep(0.5)
+    click(CONFIRM_ENTER)
+    time.sleep(1.5)
 
 def waitStadiumRaceStart():
     while(pag.pixelMatchesColor(RETURN_HOME[0],RETURN_HOME[1],RETURN_HOME_COLOR)):
@@ -264,30 +289,31 @@ def fishingLoop():
         time.sleep(1)
         
         clickCircle(FISHING_CIRCLE_REGION) # Start fishing
+        while(pag.pixelMatchesColor(FISH_BAIT_BORDER_LOC[0],FISH_BAIT_BORDER_LOC[1],FISH_BAIT_BORDER_COLOR,tolerance=5)):
+            clickCircle(FISHING_CIRCLE_REGION) # If first click was a miss, try again.
+
         ui_update_status("START FISHING")
-        time.sleep(1)
 
         catchFish()
         ui_update_status("CAUGHT FISH")
         time.sleep(1)
 
 def catchFish():
-    # print("in catch fish")
     # Wait for fish to bite
     while(not pag.pixelMatchesColor(FISH_BAR_LOCATION[0],FISH_BAR_LOCATION[1],FISH_BAR_COLOR,tolerance=5)):
         time.sleep(0.1)
-    # print("fish bite")
     # Now wait till we catch or lose the fish
     while(pag.pixelMatchesColor(FISH_BAR_LOCATION[0],FISH_BAR_LOCATION[1],FISH_BAR_COLOR,tolerance=5)):
         clickCircle(FISHING_CIRCLE_REGION)
     # print("caught or lost fish")
+    time.sleep(1) # wait a little, lost animation takes some time...
 
 def equipBait():
     click((592, 864)) # change this to bait border, see if it still works
 
 def click(posTuple):
-    pag.moveTo(posTuple[0],posTuple[1])
-    pag.click(posTuple[0],posTuple[1])
+    pag.moveTo(posTuple[0], posTuple[1])
+    pag.click(posTuple[0], posTuple[1])
 
 def clickCircle(region, debug=False):
     
@@ -357,44 +383,59 @@ def createWindow():
         [sg.Text("Created By RubberDucky#4318", font=descFont),], 
         [sg.Button("Auto Race",key='_race_')], 
         [sg.Button("Auto Fish",key='_fish_')],
-        [sg.Button("Exit")],
-        [sg.Text("Status: Idle",key='_status_')]
+        [sg.Checkbox("Auto Decline Trades",default=True, disabled=False, key='_trade_')],
+        [sg.Text("Status: Idle",key='_status_')],
+        [sg.Button("Exit",size=(30,1))]
         ]
     
     my_window = sg.Window(title='PetPals AF', icon="icon.ico", layout=layout, keep_on_top=True, margins=(20, 50))
     isRacing = False
     isFishing = False
     process = ''
+    stopInturruptionsProcess = ''
     # Create an event loop
     while True:
         event, values = my_window.read()
         
+        
+
         # Start Racing
         if(event == "_race_" and isRacing == False and isFishing == False):
             isRacing = True
             my_window["_race_"].update(text="Stop Racing")
-            print("Start event: racing")
+            my_window["_trade_"].update(disabled=True)
+
+            stopInturruptionsProcess = multiprocessing.Process(target=stopInturruptions, args=(values["_trade_"],))
+            stopInturruptionsProcess.start()
             process = multiprocessing.Process(target=racingLoop)
             process.start()
         # Stop Racing
         elif(event == "_race_" and isRacing == True):
             isRacing = False
             my_window["_race_"].update(text="Auto Race")
-            print("Stopping AutoRace")
+            my_window["_trade_"].update(disabled=False)
+            
+            stopInturruptionsProcess.terminate()
             process.terminate()
         # Start Fishing
         elif(event == "_fish_" and isFishing == False and isRacing == False):
             isFishing = True
+            my_window["_trade_"].update(disabled=True)
             my_window["_fish_"].update(text="Stop Fishing")
-            print("Start event: Fishing")
+            
+            stopInturruptionsProcess = multiprocessing.Process(target=stopInturruptions, args=(values["_trade_"],))
+            stopInturruptionsProcess.start()
             process = multiprocessing.Process(target=fishingLoop)
             process.start()
         # Stop Fishing
         elif(event == "_fish_" and isFishing == True):
+            my_window["_trade_"].update(disabled=False)
             isFishing = False
             my_window["_fish_"].update(text="Auto Fish")
-            print("Stopping AutoFish")
+
+            stopInturruptionsProcess.terminate()
             process.terminate()
+
 
         # Exit program
         if event == "Exit" or event == sg.WIN_CLOSED:
@@ -404,5 +445,7 @@ def createWindow():
 
 if __name__ == '__main__':
     createWindow()
+
+# declineTrade()
 
 # clickCircle(FISHING_CIRCLE_REGION, True)

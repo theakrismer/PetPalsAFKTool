@@ -5,6 +5,7 @@ import time
 from screeninfo import get_monitors
 import PySimpleGUI as sg
 import multiprocessing
+import keyboard
 
 my_window = ''
 
@@ -150,30 +151,31 @@ def stadiumRacing():
 
 
     # BROKEN, FIX THIS LATER, THEN CONVERT ALL COORDS TO LOCAL COORDS
-# def findGameWindow():
-#     mon0 = get_monitors()[0]
-#     center = (mon0.width / 2, mon0.height / 2)
-#     cPos = center
+def findGameWindow():
+    
+    mon0 = get_monitors()[0]
+    center = (mon0.width / 2, mon0.height / 2)
+    cPos = center
 
-#     # Find left bound
-#     while(not pag.pixelMatchesColor(cPos[0], cPos[1], (255,255,255))):
-#         cPos[0] -= 1
-#     cPos[0] += 1 # re-add one, so we're back within the play space
+    # Find left bound
+    while(not pag.pixelMatchesColor(cPos[0], cPos[1], (255,255,255))):
+        cPos[0] -= 1
+    cPos[0] += 1 # re-add one, so we're back within the play space
 
-#     # Find top bound
-#     while(not pag.pixelMatchesColor(cPos[0], cPos[1],(255,255,255))):
-#         cPos[1] -= 1
-#     cPos[1] += 1
+    # Find top bound
+    while(not pag.pixelMatchesColor(cPos[0], cPos[1],(255,255,255))):
+        cPos[1] -= 1
+    cPos[1] += 1
 
-#     topLeftBound = cPos
+    topLeftBound = cPos
 
-#     # Calculate half the width and height of the area
-#     halfAreaX = center[0] - cPos[0]
-#     halfAreaY = center[1] - cPos[1]
+    # Calculate half the width and height of the area
+    halfAreaX = center[0] - cPos[0]
+    halfAreaY = center[1] - cPos[1]
 
-#     bottomRightBound = (cPos[0] + (halfAreaX * 2), cPos[1] + (halfAreaY * 2))
-#     print("Found game area at: " + topLeftBound + ", " + bottomRightBound)
-#     return (topLeftBound, bottomRightBound)
+    bottomRightBound = (cPos[0] + (halfAreaX * 2), cPos[1] + (halfAreaY * 2))
+    print("Found game area at: " + topLeftBound + ", " + bottomRightBound)
+    return (topLeftBound, bottomRightBound)
 
 def refresh():
     click(REFRESH_BUTTON)

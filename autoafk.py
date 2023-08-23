@@ -10,53 +10,16 @@ import keyboard
 my_window = ''
 
 # left, top, width, height
-GAME_REGION = (442, 303, 996, 594)
-FISHING_CIRCLE_REGION = (950, 421, 440, 301)
+game_region = None
+FISHING_CIRCLE_REGION = (478, 118, 440, 301)
 
-FISH_BAR_LOCATION = (788,849)
-FISH_BAR_COLOR = (213, 211, 236)
+FISH_BAR_LOCATION = (365,522)
+FISH_BAR_COLOR = (95, 64, 132)
 
+FISH_BAIT_LOC = (125, 560)
 FISH_BAIT_BORDER_COLOR = (22,44,60)
-FISH_BAIT_BORDER_LOC = (566,860)
-
-
-RETURN_HOME = (1366, 840)
-RETURN_HOME_COLOR = (232,224,200)
-FISHING_EXIT = (1390, 342)
-
-BAIT_BORDER_LOC = (592, 850)
-BAIT_BORDER_COLOR = (117, 142, 56)
-
-CASH_REGISTER = (733, 841)
-CASH_REGISTER_COLOR = (197, 239, 231)
-FIRST_SELL_ITEM = (740, 578)
-SELL_BUTTON = (1161, 754)
-SELL_CONFIRM_BUTTON = (1006, 720)
-SELL_DECLINE_BUTTON = (1014, 753)
-
-SAVE_CONFIRM = (950, 718)
-
-LEAVE_HOUSE = (510, 856)
-
-CAMERA_RIGHT = (1369, 653)
-CAMERA_LEFT = (533, 650)
-
-ENTER_SNACK_SHOP = (764, 420)
-CONFIRM_ENTER = (867, 681)
-TOMATO_LOCATION = (1167, 539)
-PLUS_BUTTON = (1012, 643)
-SHOP_BUY_BUTTON = (948, 761)
-
-FISHINGVIEW = (1151, 801)
-FISHINGVIEWCOLOR = (170, 221, 227)
-ENTER_FISHING = (1185, 531)
-FISHING_ACCEPT_BUTTON = (956, 677)
-FISHING_ACCEPT_COLOR = (91, 191, 76)
-
-REFRESH_BUTTON = (86, 51)
-LOGIN_BUTTON = (1021, 595)
-LOGIN_BUTTON_COLOR = (192, 163, 54)
-SIGN_IN_BUTTON = (974, 729)
+FISH_BAIT_BORDER_LOC = (118,585)
+FISHING_EXIT = (909, 46)
 
 STAD_RACE_POS_Y = 840
 STAD_RACE_POS_XSTART = 975
@@ -70,18 +33,6 @@ LEVEL_UP_ACCEPT_BUTTON = (950, 770)
 CLOSE_PROFILE_BUTTON = (1207, 478)
 
 
-# def main():
-#     if(pag.pixelMatchesColor(LOGIN_BUTTON[0],LOGIN_BUTTON[1],LOGIN_BUTTON_COLOR)):
-#         login()
-#         travelToFishing()
-#     while True:
-#         fishingLoop()
-#         sellFish()
-#         saveGame()
-#         restock()
-#         refresh()
-#         login()
-#         travelToFishing()
 
 def stopInturruptions(declineTrades):
     while True:
@@ -149,49 +100,9 @@ def stadiumRacing():
     time.sleep(2)
 
 
-
-    # BROKEN, FIX THIS LATER, THEN CONVERT ALL COORDS TO LOCAL COORDS
-def findGameWindow():
-    
-    mon0 = get_monitors()[0]
-    center = (mon0.width / 2, mon0.height / 2)
-    cPosX = int(center[0])
-    cPosY = int(center[1])
-
-    # Find left bound
-    while(not pag.pixelMatchesColor(cPosX, cPosY, (255,255,255))):
-        cPosX -= 1
-    cPosX += 1 # re-add one, so we're back within the play space
-
-    # Find top bound
-    while(not pag.pixelMatchesColor(cPosX, cPosY,(255,255,255))):
-        cPosY -= 1
-    cPosY += 1
-
-    topLeftBound = [cPosX, cPosY]
-
-    # Calculate half the width and height of the area
-    halfAreaX = center[0] - cPosX
-    halfAreaY = center[1] - cPosY
-
-    bottomRightBound = (cPosX + (halfAreaX * 2), cPosY + (halfAreaY * 2))
-    print("Found game area at: " + str(topLeftBound) + ", " + str(bottomRightBound))
-    return (topLeftBound, bottomRightBound)
-
-def refresh():
-    click(REFRESH_BUTTON)
-    
-def login():
-    while(not pag.pixelMatchesColor(LOGIN_BUTTON[0],LOGIN_BUTTON[1],LOGIN_BUTTON_COLOR)):
-        time.sleep(0.5)
-    click(LOGIN_BUTTON)
-    time.sleep(0.5)
-    click(SIGN_IN_BUTTON)
-    while(not pag.pixelMatchesColor(CASH_REGISTER[0],CASH_REGISTER[1],CASH_REGISTER_COLOR)):
-        time.sleep(0.5)
-    click(LEAVE_HOUSE)
-
-def fishingLoop():
+def fishingLoop(updated_region):
+    global game_region
+    game_region = updated_region
     while(True):
         equipBait()
         ui_update_status("EQUIPED BAIT")
@@ -203,31 +114,42 @@ def fishingLoop():
             clickCircle(FISHING_CIRCLE_REGION) # If first click was a miss, try again.
 
         ui_update_status("START FISHING")
-
         catchFish()
         ui_update_status("CAUGHT FISH")
         time.sleep(1)
 
 def catchFish():
     # Wait for fish to bite
-    while(not pag.pixelMatchesColor(FISH_BAR_LOCATION[0],FISH_BAR_LOCATION[1],FISH_BAR_COLOR,tolerance=5)):
+    adjustedFishBarLocation = addReletivePosition(FISH_BAR_LOCATION)
+    print(adjustedFishBarLocation)
+    while(not pag.pixelMatchesColor(adjustedFishBarLocation[0],adjustedFishBarLocation[1],FISH_BAR_COLOR,tolerance=5)):
+        print("didn't find")
         time.sleep(0.1)
     # Now wait till we catch or lose the fish
-    while(pag.pixelMatchesColor(FISH_BAR_LOCATION[0],FISH_BAR_LOCATION[1],FISH_BAR_COLOR,tolerance=5)):
+    while(pag.pixelMatchesColor(adjustedFishBarLocation[0],adjustedFishBarLocation[1],FISH_BAR_COLOR,tolerance=5)):
+        print("found, trying to click")
         clickCircle(FISHING_CIRCLE_REGION)
     # print("caught or lost fish")
     time.sleep(1) # wait a little, lost animation takes some time...
 
 def equipBait():
-    click((592, 864)) # change this to bait border, see if it still works
+    click(FISH_BAIT_LOC) # change this to bait border, see if it still works
+
+def addReletivePosition(input):
+    global game_region
+    input = (game_region[0][0] + input[0], game_region[0][1] + input[1])
+    return input
 
 def click(posTuple):
+    posTuple = addReletivePosition(posTuple)
     pag.moveTo(posTuple[0], posTuple[1])
     pag.click(posTuple[0], posTuple[1])
 
 def clickCircle(region, debug=False):
+    regionStart = addReletivePosition((region[0], region[1])) 
+    regionTransformed = (regionStart[0], regionStart[1], region[2], region[3])
     
-    img = pag.screenshot("myimg.png", region=region)
+    img = pag.screenshot("myimg.png", region=regionTransformed)
     img = np.array(img)
     # Convert the image from BGR to HSV color space
     hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
@@ -261,7 +183,6 @@ def clickCircle(region, debug=False):
         )
     
     if circles is not None:
-        pag.moveTo(circles[0][0][0] + region[0] ,circles[0][0][1] + region[1])
         if not debug:
             click((circles[0][0][0] + region[0] ,circles[0][0][1] + region[1]))
         if(debug):
@@ -278,27 +199,81 @@ def clickCircle(region, debug=False):
         cv.waitKey(0)
 
 def ui_update_status(str):
-    global my_window
+    # BROKEN... Multithreading hates my_window
+    # Solution: write a function that updates a string, using Manager.Value()
+    # Then, every loop of the UI, update the status.
     return
-    print("UI update currently broken")
-    # my_window['_status_'].update(text="Status: " + str)
-
-def createWindow():
     global my_window
+    my_window['_status_'].update(value="Status: " + str)
+
+
+def findGameWindow(queue):
+    global game_region
+
+
+    mon0 = get_monitors()[0]
+    center = (mon0.width / 2, mon0.height / 2)
+    cPosX = int(center[0])
+    cPosY = int(center[1])
+
+    # Find left bound
+    while(not pag.pixelMatchesColor(cPosX, cPosY, (255,255,255))):
+        cPosX -= 1
+    cPosX += 1 # re-add one, so we're back within the play space
+
+    # Find top bound
+    # Note that, we are searching for the gold trim color just over the top of the game--not white like the X bound
+    while(not pag.pixelMatchesColor(cPosX, cPosY,(192,115,44))):
+        cPosY -= 1
+    cPosY += 1
+
+    topLeftBound = [cPosX, cPosY]
+    
+    # The game is not always centered on the x axis, and not always on the Y axis.
+    # Here, we find the bottom right bound.
+    # while(not pag.pixelMatchesColor(cPosX, cPosY,(255,255,255))):
+    #     cPosY += 1
+    # cPosY -= 1
+
+    # while(not pag.pixelMatchesColor(cPosX, cPosY,(255,255,255))):
+    #     cPosX += 1
+    # cPosX -= 1
+
+    bottomRightBound = [0, 0]
+
+    print("Found game area at: " + str(topLeftBound) + ", " + str(bottomRightBound))
+    game_region = [topLeftBound, bottomRightBound]
+    queue.put(game_region)
+    # onFindGameAreaEnd(my_window)
+
+def onFindGameAreaEnd(my_window):
+    global game_region
+    print("window in onfindend:" + str(my_window))
+    # ui_update_status("Idle")
+    # my_window['_trade_'].update(disabled=False)
+    # my_window['_fish_'].update(disabled=False)
+    # my_window['_locateGame_'].update(disabled=False)
+    # my_window['_gameregiontext_'].update(value="Game region: " + str(game_region))
+
+def createWindow(queue):
+    global my_window
+    global game_region
     sg.theme('DarkGrey10')
     titleFont = ('Courier New', 16, 'bold')
     descFont = ('Courier New', 10, 'italic')
     layout = [
         [sg.Text("PetPals AFK Tool", justification='center', font=titleFont)],
-        [sg.Text("Created By RubberDucky#4318", font=descFont),], 
-        [sg.Button("Auto Race",key='_race_')], 
+        [sg.Text("Created By: David Krismer", font=descFont)],
+        [sg.Button("Auto Race",key='_race_')],
         [sg.Button("Auto Fish",key='_fish_')],
+        [sg.Button("Find Game Area",key='_locateGame_')],
         [sg.Checkbox("Auto Decline Trades",default=True, disabled=False, key='_trade_')],
         [sg.Text("Status: Idle",key='_status_')],
-        [sg.Button("Exit",size=(30,1))]
+        [sg.Text("Game region: ?",key='_gameregiontext_')],
+        [sg.Button("Exit",size=(30,1))],
         ]
     
-    my_window = sg.Window(title='PetPals AF', icon="icon.ico", layout=layout, keep_on_top=True, margins=(20, 50))
+    my_window = sg.Window(title='PetPals AF', icon="icon.ico", layout=layout, keep_on_top=True, margins=(20, 50), finalize=True)
     isRacing = False
     isFishing = False
     process = ''
@@ -306,7 +281,21 @@ def createWindow():
     # Create an event loop
     while True:
         event, values = my_window.read()
-        
+
+
+
+        if(event == "_locateGame_" and isRacing == False and isFishing == False):
+            # print(game_region[0])
+            process = multiprocessing.Process(target=findGameWindow, args=(queue,))
+            process.start()
+            game_region = queue.get()
+            
+            process.join()
+            my_window["_trade_"].update(disabled=False)
+            my_window["_fish_"].update(disabled=False)
+            my_window["_locateGame_"].update(disabled=False)
+            my_window['_status_'].update(value="Status: Idle")
+            my_window['_gameregiontext_'].update(value="Game region: " + str(game_region[0]) + " " + str(game_region[1]))
         
 
         # Start Racing
@@ -314,6 +303,8 @@ def createWindow():
             isRacing = True
             my_window["_race_"].update(text="Stop Racing")
             my_window["_trade_"].update(disabled=True)
+            my_window["_fish_"].update(disabled=True)
+            my_window["_locateGame_"].update(disabled=True)
 
             stopInturruptionsProcess = multiprocessing.Process(target=stopInturruptions, args=(values["_trade_"],))
             stopInturruptionsProcess.start()
@@ -324,6 +315,8 @@ def createWindow():
             isRacing = False
             my_window["_race_"].update(text="Auto Race")
             my_window["_trade_"].update(disabled=False)
+            my_window["_fish_"].update(disabled=False)
+            my_window["_locateGame_"].update(disabled=False)
             
             stopInturruptionsProcess.terminate()
             process.terminate()
@@ -332,16 +325,20 @@ def createWindow():
             isFishing = True
             my_window["_trade_"].update(disabled=True)
             my_window["_fish_"].update(text="Stop Fishing")
+            my_window["_locateGame_"].update(disabled=True)
+            my_window["_race_"].update(disabled=True)
             
             stopInturruptionsProcess = multiprocessing.Process(target=stopInturruptions, args=(values["_trade_"],))
             stopInturruptionsProcess.start()
-            process = multiprocessing.Process(target=fishingLoop)
+            process = multiprocessing.Process(target=fishingLoop, args=(game_region,))
             process.start()
         # Stop Fishing
         elif(event == "_fish_" and isFishing == True):
             my_window["_trade_"].update(disabled=False)
             isFishing = False
             my_window["_fish_"].update(text="Auto Fish")
+            my_window["_locateGame_"].update(disabled=False)
+            my_window["_race_"].update(disabled=False)
 
             stopInturruptionsProcess.terminate()
             process.terminate()
@@ -349,15 +346,19 @@ def createWindow():
 
         # Exit program
         if event == "Exit" or event == sg.WIN_CLOSED:
+
             if process != '':
                 process.terminate()
+
+            if stopInturruptionsProcess != '':
+                stopInturruptionsProcess.terminate()
+
             break
 
-
-findGameWindow()
-
 if __name__ == '__main__':
-    createWindow()
+    manager = multiprocessing.Manager()
+    queue = multiprocessing.Queue()
+    createWindow(queue)
 
 
 
@@ -365,6 +366,71 @@ if __name__ == '__main__':
 
 
 # Below is test code, simulating what it would be like to sell the inventory and restock.
+
+# def main():
+#     if(pag.pixelMatchesColor(LOGIN_BUTTON[0],LOGIN_BUTTON[1],LOGIN_BUTTON_COLOR)):
+#         login()
+#         travelToFishing()
+#     while True:
+#         fishingLoop()
+#         sellFish()
+#         saveGame()
+#         restock()
+#         refresh()
+#         login()
+#         travelToFishing()
+
+
+# RETURN_HOME = (1366, 840)
+# RETURN_HOME_COLOR = (232,224,200)
+
+
+# BAIT_BORDER_LOC = (592, 850)
+# BAIT_BORDER_COLOR = (117, 142, 56)
+
+# CASH_REGISTER = (733, 841)
+# CASH_REGISTER_COLOR = (197, 239, 231)
+# FIRST_SELL_ITEM = (740, 578)
+# SELL_BUTTON = (1161, 754)
+# SELL_CONFIRM_BUTTON = (1006, 720)
+# SELL_DECLINE_BUTTON = (1014, 753)
+
+# SAVE_CONFIRM = (950, 718)
+
+# LEAVE_HOUSE = (510, 856)
+
+# CAMERA_RIGHT = (1369, 653)
+# CAMERA_LEFT = (533, 650)
+
+# ENTER_SNACK_SHOP = (764, 420)
+# CONFIRM_ENTER = (867, 681)
+# TOMATO_LOCATION = (1167, 539)
+# PLUS_BUTTON = (1012, 643)
+# SHOP_BUY_BUTTON = (948, 761)
+
+# FISHINGVIEW = (1151, 801)
+# FISHINGVIEWCOLOR = (170, 221, 227)
+# ENTER_FISHING = (1185, 531)
+# FISHING_ACCEPT_BUTTON = (956, 677)
+# FISHING_ACCEPT_COLOR = (91, 191, 76)
+
+# REFRESH_BUTTON = (86, 51)
+# LOGIN_BUTTON = (1021, 595)
+# LOGIN_BUTTON_COLOR = (192, 163, 54)
+# SIGN_IN_BUTTON = (974, 729)
+
+# def refresh():
+#     click(REFRESH_BUTTON)
+
+# def login():
+#     while(not pag.pixelMatchesColor(LOGIN_BUTTON[0],LOGIN_BUTTON[1],LOGIN_BUTTON_COLOR)):
+#         time.sleep(0.5)
+#     click(LOGIN_BUTTON)
+#     time.sleep(0.5)
+#     click(SIGN_IN_BUTTON)
+#     while(not pag.pixelMatchesColor(CASH_REGISTER[0],CASH_REGISTER[1],CASH_REGISTER_COLOR)):
+#         time.sleep(0.5)
+#     click(LEAVE_HOUSE)
 
 # def travelToFishing():
 #     while(not pag.pixelMatchesColor(RETURN_HOME[0],RETURN_HOME[1],RETURN_HOME_COLOR)):

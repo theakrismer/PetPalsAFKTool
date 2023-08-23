@@ -155,26 +155,27 @@ def findGameWindow():
     
     mon0 = get_monitors()[0]
     center = (mon0.width / 2, mon0.height / 2)
-    cPos = center
+    cPosX = int(center[0])
+    cPosY = int(center[1])
 
     # Find left bound
-    while(not pag.pixelMatchesColor(cPos[0], cPos[1], (255,255,255))):
-        cPos[0] -= 1
-    cPos[0] += 1 # re-add one, so we're back within the play space
+    while(not pag.pixelMatchesColor(cPosX, cPosY, (255,255,255))):
+        cPosX -= 1
+    cPosX += 1 # re-add one, so we're back within the play space
 
     # Find top bound
-    while(not pag.pixelMatchesColor(cPos[0], cPos[1],(255,255,255))):
-        cPos[1] -= 1
-    cPos[1] += 1
+    while(not pag.pixelMatchesColor(cPosX, cPosY,(255,255,255))):
+        cPosY -= 1
+    cPosY += 1
 
-    topLeftBound = cPos
+    topLeftBound = [cPosX, cPosY]
 
     # Calculate half the width and height of the area
-    halfAreaX = center[0] - cPos[0]
-    halfAreaY = center[1] - cPos[1]
+    halfAreaX = center[0] - cPosX
+    halfAreaY = center[1] - cPosY
 
-    bottomRightBound = (cPos[0] + (halfAreaX * 2), cPos[1] + (halfAreaY * 2))
-    print("Found game area at: " + topLeftBound + ", " + bottomRightBound)
+    bottomRightBound = (cPosX + (halfAreaX * 2), cPosY + (halfAreaY * 2))
+    print("Found game area at: " + str(topLeftBound) + ", " + str(bottomRightBound))
     return (topLeftBound, bottomRightBound)
 
 def refresh():
@@ -189,100 +190,6 @@ def login():
     while(not pag.pixelMatchesColor(CASH_REGISTER[0],CASH_REGISTER[1],CASH_REGISTER_COLOR)):
         time.sleep(0.5)
     click(LEAVE_HOUSE)
-
-def travelToFishing():
-    while(not pag.pixelMatchesColor(RETURN_HOME[0],RETURN_HOME[1],RETURN_HOME_COLOR)):
-        time.sleep(0.2)
-    moveCamRight(5)
-    while(not pag.pixelMatchesColor(FISHINGVIEW[0],FISHINGVIEW[1],FISHINGVIEWCOLOR)):
-        moveCamRight(5)
-        time.sleep(0.5)
-    click(ENTER_FISHING)
-    time.sleep(0.5)
-    click(CONFIRM_ENTER)
-    while(not pag.pixelMatchesColor(FISHING_ACCEPT_BUTTON[0],FISHING_ACCEPT_BUTTON[1],FISHING_ACCEPT_COLOR)):
-        time.sleep(0.2)
-    click(FISHING_ACCEPT_BUTTON)
-
-def restock():
-    click(LEAVE_HOUSE)
-    while(not pag.pixelMatchesColor(RETURN_HOME[0],RETURN_HOME[1],RETURN_HOME_COLOR)):
-        time.sleep(0.2)
-    moveCamRight(4)
-    moveCamLeft(0.25)
-    click(ENTER_SNACK_SHOP)
-    time.sleep(0.2)
-    click(CONFIRM_ENTER)
-    time.sleep(0.2)
-    while(not pag.pixelMatchesColor(RETURN_HOME[0],RETURN_HOME[1],RETURN_HOME_COLOR)):
-        time.sleep(0.2)
-    moveCamRight(5)
-    click(TOMATO_LOCATION)
-    time.sleep(0.2)
-    for i in range(50):
-        click(PLUS_BUTTON)
-    time.sleep(0.1)
-    click(SHOP_BUY_BUTTON)
-    time.sleep(0.4)
-    click(RETURN_HOME)
-    pag.moveTo(500,500)
-
-    # go fish again
-    while(not pag.pixelMatchesColor(RETURN_HOME[0],RETURN_HOME[1],RETURN_HOME_COLOR)):
-        time.sleep(0.2)
-    moveCamRight(1)
-    while(not pag.pixelMatchesColor(FISHINGVIEW[0],FISHINGVIEW[1],FISHINGVIEWCOLOR)):
-        moveCamRight(1)
-    click(ENTER_FISHING)
-    time.sleep(0.2)
-    click(CONFIRM_ENTER)
-    while(not pag.pixelMatchesColor(FISHING_ACCEPT_BUTTON[0],FISHING_ACCEPT_BUTTON[1],FISHING_ACCEPT_COLOR)):
-        time.sleep(0.2)
-    click(FISHING_ACCEPT_BUTTON)
-    
-def moveCamRight(waitTime:float):
-    click(CAMERA_RIGHT)
-    pag.mouseDown(button='left')
-    time.sleep(waitTime)
-    pag.mouseUp(button='left')
-    pag.click()
-
-def moveCamLeft(waitTime:float):
-    click(CAMERA_LEFT)
-    pag.mouseDown(button='left')
-    time.sleep(waitTime)
-    pag.mouseUp(button='left')
-    pag.click()
-
-def sellFish():
-    click(FISHING_EXIT)
-    while(not pag.pixelMatchesColor(RETURN_HOME[0],RETURN_HOME[1],RETURN_HOME_COLOR)):
-        time.sleep(0.2)
-    click(RETURN_HOME)
-    while(not pag.pixelMatchesColor(CASH_REGISTER[0],CASH_REGISTER[1],CASH_REGISTER_COLOR)):
-        time.sleep(0.2)
-    for i in range(4):
-        sellInv()
-    click(SELL_DECLINE_BUTTON)
-    time.sleep(0.3)
-
-def saveGame():
-    time.sleep(1)
-    click(FISHING_EXIT)
-    time.sleep(0.8)
-    click(SAVE_CONFIRM)
-    time.sleep(0.4)
-
-def sellInv():
-        click(CASH_REGISTER)
-        time.sleep(0.2)
-        for i in range(15):
-            click(FIRST_SELL_ITEM)
-        time.sleep(0.1)
-        click(SELL_BUTTON)
-        time.sleep(0.3)
-        click(SELL_CONFIRM_BUTTON)
-        time.sleep(0.1)
 
 def fishingLoop():
     while(True):
@@ -446,9 +353,109 @@ def createWindow():
                 process.terminate()
             break
 
+
+findGameWindow()
+
 if __name__ == '__main__':
     createWindow()
 
-# declineTrade()
 
-# clickCircle(FISHING_CIRCLE_REGION, True)
+
+
+
+
+# Below is test code, simulating what it would be like to sell the inventory and restock.
+
+# def travelToFishing():
+#     while(not pag.pixelMatchesColor(RETURN_HOME[0],RETURN_HOME[1],RETURN_HOME_COLOR)):
+#         time.sleep(0.2)
+#     moveCamRight(5)
+#     while(not pag.pixelMatchesColor(FISHINGVIEW[0],FISHINGVIEW[1],FISHINGVIEWCOLOR)):
+#         moveCamRight(5)
+#         time.sleep(0.5)
+#     click(ENTER_FISHING)
+#     time.sleep(0.5)
+#     click(CONFIRM_ENTER)
+#     while(not pag.pixelMatchesColor(FISHING_ACCEPT_BUTTON[0],FISHING_ACCEPT_BUTTON[1],FISHING_ACCEPT_COLOR)):
+#         time.sleep(0.2)
+#     click(FISHING_ACCEPT_BUTTON)
+
+# def restock():
+#     click(LEAVE_HOUSE)
+#     while(not pag.pixelMatchesColor(RETURN_HOME[0],RETURN_HOME[1],RETURN_HOME_COLOR)):
+#         time.sleep(0.2)
+#     moveCamRight(4)
+#     moveCamLeft(0.25)
+#     click(ENTER_SNACK_SHOP)
+#     time.sleep(0.2)
+#     click(CONFIRM_ENTER)
+#     time.sleep(0.2)
+#     while(not pag.pixelMatchesColor(RETURN_HOME[0],RETURN_HOME[1],RETURN_HOME_COLOR)):
+#         time.sleep(0.2)
+#     moveCamRight(5)
+#     click(TOMATO_LOCATION)
+#     time.sleep(0.2)
+#     for i in range(50):
+#         click(PLUS_BUTTON)
+#     time.sleep(0.1)
+#     click(SHOP_BUY_BUTTON)
+#     time.sleep(0.4)
+#     click(RETURN_HOME)
+#     pag.moveTo(500,500)
+
+#     # go fish again
+#     while(not pag.pixelMatchesColor(RETURN_HOME[0],RETURN_HOME[1],RETURN_HOME_COLOR)):
+#         time.sleep(0.2)
+#     moveCamRight(1)
+#     while(not pag.pixelMatchesColor(FISHINGVIEW[0],FISHINGVIEW[1],FISHINGVIEWCOLOR)):
+#         moveCamRight(1)
+#     click(ENTER_FISHING)
+#     time.sleep(0.2)
+#     click(CONFIRM_ENTER)
+#     while(not pag.pixelMatchesColor(FISHING_ACCEPT_BUTTON[0],FISHING_ACCEPT_BUTTON[1],FISHING_ACCEPT_COLOR)):
+#         time.sleep(0.2)
+#     click(FISHING_ACCEPT_BUTTON)
+    
+# def moveCamRight(waitTime:float):
+#     click(CAMERA_RIGHT)
+#     pag.mouseDown(button='left')
+#     time.sleep(waitTime)
+#     pag.mouseUp(button='left')
+#     pag.click()
+
+# def moveCamLeft(waitTime:float):
+#     click(CAMERA_LEFT)
+#     pag.mouseDown(button='left')
+#     time.sleep(waitTime)
+#     pag.mouseUp(button='left')
+#     pag.click()
+
+# def sellFish():
+#     click(FISHING_EXIT)
+#     while(not pag.pixelMatchesColor(RETURN_HOME[0],RETURN_HOME[1],RETURN_HOME_COLOR)):
+#         time.sleep(0.2)
+#     click(RETURN_HOME)
+#     while(not pag.pixelMatchesColor(CASH_REGISTER[0],CASH_REGISTER[1],CASH_REGISTER_COLOR)):
+#         time.sleep(0.2)
+#     for i in range(4):
+#         sellInv()
+#     click(SELL_DECLINE_BUTTON)
+#     time.sleep(0.3)
+
+# def saveGame():
+    # time.sleep(1)
+    # click(FISHING_EXIT)
+    # time.sleep(0.8)
+    # click(SAVE_CONFIRM)
+    # time.sleep(0.4)
+
+# def sellInv():
+#         click(CASH_REGISTER)
+#         time.sleep(0.2)
+#         for i in range(15):
+#             click(FIRST_SELL_ITEM)
+#         time.sleep(0.1)
+#         click(SELL_BUTTON)
+#         time.sleep(0.3)
+#         click(SELL_CONFIRM_BUTTON)
+#         time.sleep(0.1)

@@ -11,22 +11,28 @@ my_window = ''
 
 # left, top, width, height
 game_region = None
-FISHING_CIRCLE_REGION = (478, 118, 440, 301)
 
+FISHING_CIRCLE_REGION = (478, 118, 440, 301)
 FISH_BAR_LOCATION = (365,522)
 FISH_BAR_COLOR = (95, 64, 132)
-
 FISH_BAIT_LOC = (125, 560)
 FISH_BAIT_BORDER_COLOR = (22,44,60)
 FISH_BAIT_BORDER_LOC = (118,585)
 FISHING_EXIT = (909, 46)
 
-STAD_RACE_POS_Y = 840
-STAD_RACE_POS_XSTART = 975
+STAD_ENTER = (272, 73)
+STAD_RACE_POS_Y = 610
+STAD_RACE_POS_XSTART = 424
 STAD_RACE_JUMP_COLOR = (155,168,163)
-FINISH_BUSH_POS = (751,830)
-FINISH_BUSH_POS_2 = (747,830)
+STAD_WAITING_ROOM = (296,14)
+STAD_WAITING_ROOM_COLOR = (82,37,22)
+FINISH_BUSH_POS = (278,527)
+FINISH_BUSH_POS_2 = (274,527)
 FINISH_BUSH_COLOR = (255,255,255)
+
+RETURN_HOME = (918, 533)
+RETURN_HOME_COLOR = (21,219,128)
+CONFIRM_ENTER = (388, 386)
 
 TRADE_DECLINE_BUTTON = (1144,637)
 LEVEL_UP_ACCEPT_BUTTON = (950, 770)
@@ -56,7 +62,9 @@ def closeProfile():
         print("CLOSING PROFILE")
         click(CLOSE_PROFILE_BUTTON)
 
-def racingLoop():
+def racingLoop(updated_region):
+    global game_region
+    game_region = updated_region
     while True:
         time.sleep(1.5) # Added delay, to close level up etc
         ui_update_status("ENTER STATIUM")
@@ -69,14 +77,16 @@ def racingLoop():
 
 # Auto Statium
 def enterStadium():
-   while(not pag.locateOnScreen("stadium_lobby.PNG",confidence=0.8)):
-    click((720,420))
+   adjustedWaitingRoom = addReletivePosition(STAD_WAITING_ROOM)
+   while(not pag.pixelMatchesColor(adjustedWaitingRoom[0],adjustedWaitingRoom[1],STAD_WAITING_ROOM_COLOR)):
+    click(STAD_ENTER)
     time.sleep(0.5)
     click(CONFIRM_ENTER)
     time.sleep(1.5)
 
 def waitStadiumRaceStart():
-    while(pag.pixelMatchesColor(RETURN_HOME[0],RETURN_HOME[1],RETURN_HOME_COLOR)):
+    adjustedReturnHome = addReletivePosition(RETURN_HOME)
+    while(pag.pixelMatchesColor(adjustedReturnHome[0], adjustedReturnHome[1], RETURN_HOME_COLOR)):
         time.sleep(0.2)
         print("Waiting for race to start")
     time.sleep(2)
@@ -85,10 +95,13 @@ def stadiumRacing():
     bushcount = 0
     while(bushcount < 5):
         # Jump over obstacle
-        if(pag.pixelMatchesColor(STAD_RACE_POS_XSTART, STAD_RACE_POS_Y, STAD_RACE_JUMP_COLOR)):
+        adjustedXStart = game_region[0][0] + STAD_RACE_POS_XSTART
+        adjustedYStart = game_region[0][1] + STAD_RACE_POS_Y
+        adjustedFinishBush = addReletivePosition(FINISH_BUSH_POS)
+        if(pag.pixelMatchesColor(adjustedXStart, adjustedYStart, STAD_RACE_JUMP_COLOR)):
             click((950,600))
 
-        elif pag.pixelMatchesColor(FINISH_BUSH_POS[0],FINISH_BUSH_POS[1], FINISH_BUSH_COLOR) or pag.pixelMatchesColor(FINISH_BUSH_POS_2[0],FINISH_BUSH_POS_2[1], FINISH_BUSH_COLOR):
+        elif pag.pixelMatchesColor(adjustedFinishBush[0],adjustedFinishBush[1], FINISH_BUSH_COLOR) or pag.pixelMatchesColor(FINISH_BUSH_POS_2[0],FINISH_BUSH_POS_2[1], FINISH_BUSH_COLOR):
             bushcount += 1
             time.sleep(0.2)
             
@@ -109,7 +122,8 @@ def fishingLoop(updated_region):
         time.sleep(1)
         
         clickCircle(FISHING_CIRCLE_REGION) # Start fishing
-        while(pag.pixelMatchesColor(FISH_BAIT_BORDER_LOC[0],FISH_BAIT_BORDER_LOC[1],FISH_BAIT_BORDER_COLOR,tolerance=5)):
+        adjustedFishBorder = addReletivePosition(FISH_BAIT_BORDER_LOC)
+        while(pag.pixelMatchesColor(adjustedFishBorder[0],adjustedFishBorder[1],FISH_BAIT_BORDER_COLOR,tolerance=5)): ## SEE IF THIS LINE STILL WORKS
             equipBait()
             clickCircle(FISHING_CIRCLE_REGION) # If first click was a miss, try again.
 
@@ -123,11 +137,9 @@ def catchFish():
     adjustedFishBarLocation = addReletivePosition(FISH_BAR_LOCATION)
     print(adjustedFishBarLocation)
     while(not pag.pixelMatchesColor(adjustedFishBarLocation[0],adjustedFishBarLocation[1],FISH_BAR_COLOR,tolerance=5)):
-        print("didn't find")
         time.sleep(0.1)
     # Now wait till we catch or lose the fish
     while(pag.pixelMatchesColor(adjustedFishBarLocation[0],adjustedFishBarLocation[1],FISH_BAR_COLOR,tolerance=5)):
-        print("found, trying to click")
         clickCircle(FISHING_CIRCLE_REGION)
     # print("caught or lost fish")
     time.sleep(1) # wait a little, lost animation takes some time...
@@ -308,7 +320,7 @@ def createWindow(queue):
 
             stopInturruptionsProcess = multiprocessing.Process(target=stopInturruptions, args=(values["_trade_"],))
             stopInturruptionsProcess.start()
-            process = multiprocessing.Process(target=racingLoop)
+            process = multiprocessing.Process(target=racingLoop, args=(game_region,))
             process.start()
         # Stop Racing
         elif(event == "_race_" and isRacing == True):
@@ -381,8 +393,7 @@ if __name__ == '__main__':
 #         travelToFishing()
 
 
-# RETURN_HOME = (1366, 840)
-# RETURN_HOME_COLOR = (232,224,200)
+
 
 
 # BAIT_BORDER_LOC = (592, 850)
@@ -403,7 +414,6 @@ if __name__ == '__main__':
 # CAMERA_LEFT = (533, 650)
 
 # ENTER_SNACK_SHOP = (764, 420)
-# CONFIRM_ENTER = (867, 681)
 # TOMATO_LOCATION = (1167, 539)
 # PLUS_BUTTON = (1012, 643)
 # SHOP_BUY_BUTTON = (948, 761)
